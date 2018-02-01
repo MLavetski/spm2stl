@@ -18,6 +18,10 @@ converter::~converter()
 
 void converter::on_BrowseButton_clicked()
 {
+    ui->openBut->setEnabled(false);
+    ui->convBut->setEnabled(false);
+    ui->fieldselect->clear();
+    ui->fieldselect->setEnabled(false);
     inputfilename = QFileDialog::getOpenFileName(this, tr("Открыть изображение")
                                                  ,inputfilename, tr("spm file (*.spm)"));
     ui->lineEditIn->setText(inputfilename);
@@ -54,6 +58,7 @@ void converter::openspm()
         dataRaw.resize(field_amount);
         dataShort.resize(field_amount);
         dataMuliplied.resize(field_amount);
+
         char notifications[16][336];//Getting all notifications about stored fields of data.
         for(int i=0;i<field_amount;i++)
             data.readRawData(notifications[i], 336);

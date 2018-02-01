@@ -18,9 +18,9 @@ public:
     ~converter();
 
     QString inputfilename;
-    QVector<QVector<char> >dataRaw;//[16][524288];//Place for raw data of fields from spm1 files. 2 bytes for each point. Max 256*256 points.
-    QVector<QVector<quint16> >dataShort;//[16][262144];//Same data but transformed into 16 bit integers.
-    QVector<QVector<float> >dataMuliplied;//[16][262144];//Data after applying z-multiplier.
+    QVector<QVector<char> >dataRaw;//Place for raw data of fields from spm1 files. 2 bytes for each point. Max 256*256 points.
+    QVector<QVector<quint16> >dataShort;//Same data but transformed into 16 bit integers.
+    QVector<QVector<float> >dataMuliplied;//Data after applying z-multiplier.
     qint16 Nx[16],Ny[16];
     char fieldName[16][32], scaleXYname[16][6], scaleZname[16][6];//info from notifications about fields
     float scaleX[16], scaleY[16], scaleZ[16];
