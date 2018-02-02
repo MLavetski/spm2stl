@@ -33,6 +33,10 @@ private slots:
 
     void on_convBut_clicked();
 
+    void on_delZerosBut_clicked();
+
+    void on_fixSurfBut_clicked();
+
 private:
     Ui::converter *ui;
 

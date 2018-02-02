@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>125</height>
+    <height>203</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>92</y>
+      <y>160</y>
       <width>111</width>
       <height>21</height>
      </rect>
@@ -76,7 +76,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>80</y>
+      <y>113</y>
       <width>121</width>
       <height>22</height>
      </rect>
@@ -102,7 +102,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>60</y>
+      <y>95</y>
       <width>61</width>
       <height>16</height>
      </rect>
@@ -115,13 +115,47 @@
     <property name="geometry">
      <rect>
       <x>310</x>
-      <y>80</y>
+      <y>160</y>
       <width>80</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
      <string>Выход</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="delZerosBut">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>90</y>
+      <width>111</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Вырезать
+пустые строки</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="fixSurfBut">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>125</y>
+      <width>111</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Выровнять
+плоскость</string>
     </property>
    </widget>
   </widget>

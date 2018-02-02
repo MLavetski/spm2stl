@@ -104,6 +104,9 @@ void converter::openspm()
             ui->fieldselect->insertItem(i, fieldName[i]);
         ui->fieldselect->setEnabled(true);
         ui->convBut->setEnabled(true);
+        ui->delZerosBut->setEnabled(true);
+        ui->fixSurfBut->setEnabled(true);
+        ui->openBut->setEnabled(false);
 }
 
 void converter::on_openBut_clicked()
@@ -118,7 +121,8 @@ void converter::on_convBut_clicked()
     //verticles of triangles, stores them in vector of triangle class objects, calls calcNormal function
     //for each triange, and writes them into binary .stl file
     quint16 index = ui->fieldselect->currentIndex();
-    quint16 sizeX = Nx[index], sizeY = Ny[index];
+    quint16 sizeX = Nx[index];
+    quint16 sizeY = Ny[index];
     char header[80];
     for(int i=0;i<80;i++)
     {
@@ -206,4 +210,39 @@ void converter::on_convBut_clicked()
     QMessageBox yep;
     yep.setText("Selected field was saved to " + outputfilename + "_" + fieldName[ui->fieldselect->currentIndex()] + ".stl");
     yep.exec();
+}
+
+void converter::on_delZerosBut_clicked()
+{
+    int deleted = 0;
+    for(int i=0;i<dataMuliplied.size();i++)
+    {
+        QVector<bool> isMT(Ny[i],true);
+        for(int j=0;j<Ny[i];j++)
+        {
+            for(int k=0;k<Nx[i];k++)
+            {
+                if(dataMuliplied[i][(j*Nx[i])+k]!=0)
+                {
+                    isMT[j] = false;
+                    break;
+                }
+            }
+            if(isMT[j])
+            {
+                dataMuliplied[i].remove(j*Nx[i],Nx[i]);
+                j--;
+                Ny[i]--;
+                deleted++;
+            }
+        }
+    }
+    QMessageBox yep;
+    yep.setText("Deleted " + QString::number(deleted) + " empty strings across all fields");
+    yep.exec();
+}
+
+void converter::on_fixSurfBut_clicked()
+{
+
 }
