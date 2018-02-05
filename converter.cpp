@@ -18,26 +18,23 @@ converter::~converter()
 
 void converter::on_BrowseButton_clicked()
 {
-    ui->openBut->setEnabled(false);
     ui->convBut->setEnabled(false);
     ui->fieldselect->clear();
     ui->fieldselect->setEnabled(false);
-    inputfilename = QFileDialog::getOpenFileName(this, tr("Открыть изображение")
+    inputfilename = QFileDialog::getOpenFileName(this, tr("Open file")
                                                  ,inputfilename, tr("spm file (*.spm)"));
+    if(inputfilename.isEmpty())
+    {
+        QMessageBox::critical(this, "Filename was not specified", "Filename for input file was not specified.");
+        return;
+    }
     ui->lineEditIn->setText(inputfilename);
-    if(!(inputfilename.isEmpty()))
-        ui->openBut->setEnabled(true);
+    openspm();
+    delZeros();
 }
 
 void converter::openspm()
 {
-    if(inputfilename=="")//Default inputfilename
-        {
-            QMessageBox MTname;
-            MTname.setText("Не выбран .spm файл. Пожалуйста, выберите.");
-            MTname.exec();
-            inputfilename = QFileDialog::getOpenFileName(this, tr("Открыть .spm файл"),"/", tr("Spm files (*.spm)"));
-        }
     QFile spm(inputfilename);//Opening input file
         if(!spm.open(QIODevice::ReadOnly))
             return;
@@ -58,6 +55,7 @@ void converter::openspm()
         dataRaw.resize(field_amount);
         dataShort.resize(field_amount);
         dataMuliplied.resize(field_amount);
+        wasFixed.resize(field_amount);
 
         char notifications[16][336];//Getting all notifications about stored fields of data.
         for(int i=0;i<field_amount;i++)
@@ -104,14 +102,7 @@ void converter::openspm()
             ui->fieldselect->insertItem(i, fieldName[i]);
         ui->fieldselect->setEnabled(true);
         ui->convBut->setEnabled(true);
-        ui->delZerosBut->setEnabled(true);
         ui->fixSurfBut->setEnabled(true);
-        ui->openBut->setEnabled(false);
-}
-
-void converter::on_openBut_clicked()
-{
-    openspm();
 }
 
 void converter::on_convBut_clicked()
@@ -120,6 +111,19 @@ void converter::on_convBut_clicked()
     //that function takes points in said matrix in specified order(points MUST be CCW) to represent
     //verticles of triangles, stores them in vector of triangle class objects, calls calcNormal function
     //for each triange, and writes them into binary .stl file
+    //first, generate filemane for output file.
+    int extPointPos = inputfilename.lastIndexOf(".");
+    QString outputfilename = inputfilename.left(extPointPos);
+    //then, we open the file with generatated name. If it doesn't exist, create it.
+    outputfilename = QFileDialog::getSaveFileName(this, tr("Save as")
+                                                 ,outputfilename + + "_" + fieldName[ui->fieldselect->currentIndex()], tr("Stereolithography file (*.stl)"));
+    if(outputfilename.isEmpty())
+    {
+        QMessageBox::critical(this, "Filename was not specified", "Filename for output file was not specified. Stopping function.");
+        return;
+    }
+    QFile file(outputfilename);
+    file.open(QIODevice::WriteOnly);
     quint16 index = ui->fieldselect->currentIndex();
     quint16 sizeX = Nx[index];
     quint16 sizeY = Ny[index];
@@ -171,12 +175,6 @@ void converter::on_convBut_clicked()
     for(int i=0;i<20;i++)
         test[i] = triangles[i];
     //ok, we got triangles ready, now write them into .stl file
-    //first, generate filemane for output file.
-    int extPointPos = inputfilename.lastIndexOf(".");
-    QString outputfilename = inputfilename.left(extPointPos);
-    //then, we open the file with generatated name. If it doesn't exist, create it.
-    QFile file(outputfilename + "_" + fieldName[ui->fieldselect->currentIndex()] + ".stl");
-    file.open(QIODevice::WriteOnly);
     QDataStream out(&file);   // we will serialize the data into the file
     out.setByteOrder(QDataStream::LittleEndian);
     //write 80-byte header into file. In our case, header is filled with empty symbols.
@@ -208,41 +206,111 @@ void converter::on_convBut_clicked()
     //then we close the output file and send notification of successfull conversion
     file.close();
     QMessageBox yep;
-    yep.setText("Selected field was saved to " + outputfilename + "_" + fieldName[ui->fieldselect->currentIndex()] + ".stl");
+    yep.setText("Selected field was saved to " + outputfilename);
     yep.exec();
 }
 
-void converter::on_delZerosBut_clicked()
+void converter::delZeros()
 {
     int deleted = 0;
-    for(int i=0;i<dataMuliplied.size();i++)
+    quint8 index = ui->fieldselect->currentIndex();
+    QVector<bool> isMT(Ny[index],true);
+    for(int j=0;j<Ny[index];j++)
     {
-        QVector<bool> isMT(Ny[i],true);
-        for(int j=0;j<Ny[i];j++)
+        for(int k=0;k<Nx[index];k++)
         {
-            for(int k=0;k<Nx[i];k++)
+            if(dataMuliplied[index][(j*Nx[index])+k]!=0)
             {
-                if(dataMuliplied[i][(j*Nx[i])+k]!=0)
-                {
-                    isMT[j] = false;
-                    break;
-                }
-            }
-            if(isMT[j])
-            {
-                dataMuliplied[i].remove(j*Nx[i],Nx[i]);
-                j--;
-                Ny[i]--;
-                deleted++;
+                isMT[j] = false;
+                break;
             }
         }
+        if(isMT[j])
+        {
+            dataMuliplied[index].remove(j*Nx[index],Nx[index]);
+            j--;
+            Ny[index]--;
+            deleted++;
+        }
     }
-    QMessageBox yep;
-    yep.setText("Deleted " + QString::number(deleted) + " empty strings across all fields");
-    yep.exec();
+    if(deleted>0)
+    {
+        QMessageBox yep;
+        yep.setText("Deleted " + QString::number(deleted) + " empty strings");
+        yep.exec();
+    }
 }
 
 void converter::on_fixSurfBut_clicked()
 {
+    quint8 ind = ui->fieldselect->currentIndex();
+    quint16 X = Nx[ind], Y = Ny[ind];
+    for(int i=0;i<X*Y;i+=X)//for each row
+    {
+        calcCurve(i);
+        for(int j=0;j<X;j++)
+        {
+            dataMuliplied[ind][i+j]-=(a*j*j)+(b*j)+c;
+        }
+    }
+    wasFixed[ind] = true;
+    ui->fixSurfBut->setEnabled(false);
+}
 
+void converter::calcCurve(int start)
+{
+    quint8 ind = ui->fieldselect->currentIndex();
+    quint16 X = Nx[ind];
+    QVector<short> xArray(X);
+    QVector<float> yArray(X);
+    for(int i=0;i<X;i++)
+    {
+        xArray[i]=i;
+        yArray[i]=dataMuliplied[ind][start+i];
+    }
+    double ATAbase[5], ATAmatrix[3][3], ATAinversed[3][3], ATYmatrix[3], CBAmatrix[3], det = 0;
+    for(int i=0;i<5;i++)
+    {
+        ATAbase[i]=0;
+        for(int j=0;j<X;j++)
+        {
+            ATAbase[i] += pow(xArray[j],i);
+        }
+    }
+    for(int i=0;i<3;i++)
+    {
+        CBAmatrix[i]=0;
+        for(int j=0;j<3;j++)
+        {
+            ATAmatrix[i][j] = ATAbase[i+j];
+        }
+    }
+    //calculate determinant
+    for(int i = 0; i < 3; i++)
+        det = det + (ATAmatrix[0][i] * (ATAmatrix[1][(i+1)%3] * ATAmatrix[2][(i+2)%3] - ATAmatrix[1][(i+2)%3] * ATAmatrix[2][(i+1)%3]));
+    //calculate inverse matrix
+    for(int i = 0; i < 3; i++)
+    {
+        for(int j = 0; j < 3; j++)
+            ATAinversed[i][j]=((ATAmatrix[(j+1)%3][(i+1)%3] * ATAmatrix[(j+2)%3][(i+2)%3]) - (ATAmatrix[(j+1)%3][(i+2)%3] * ATAmatrix[(j+2)%3][(i+1)%3]))/det;
+    }
+    for(int i=0;i<3;i++)
+    {
+        ATYmatrix[i]=0;
+        for(int j=0;j<X;j++)
+        {
+            ATYmatrix[i]+=(pow(xArray[j],i)*yArray[j]);
+        }
+    }
+    for(int j = 0; j < 3; ++j)
+         for(int k = 0; k < 3; ++k)
+         {
+            CBAmatrix[j] += ATYmatrix[k] * ATAinversed[k][j];
+         }
+    c = CBAmatrix[0]; b = CBAmatrix[1]; a = CBAmatrix[2];
+}
+
+void converter::on_fieldselect_currentIndexChanged(int index)
+{
+        ui->fixSurfBut->setEnabled(!wasFixed[index]);
 }
