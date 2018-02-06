@@ -135,34 +135,36 @@ void converter::on_convBut_clicked()
     quint32 amountTriangles = (sizeX-1)*(sizeY-1)*2;
     QVector<triangle> triangles(amountTriangles);
     int i=0;//counter for current triangle
+    double scaleMult = 1000;//value by witch we will divide the x and y coordinates of our points, since most software uses our values as mm instead of mkm.
+    float scaleXfixed = scaleX[index]/scaleMult, scaleYfixed = scaleY[index]/scaleMult;
     for(int y=0;y<sizeY-1;y++)  //write coordinates into corresponding triangle
     {                           //there are to types of triangles
         for(int x=0;x<sizeX;x++)//flat side up and down
         {
             if(x!=0)//here we writing flat side down triangle
             {
-                triangles[i].point3[0] = x*scaleX[index];
-                triangles[i].point3[1] = y*scaleY[index];
-                triangles[i].point3[2] = dataMuliplied[index][y*Nx[index]+x];
-                triangles[i].point2[0] = (x-1)*scaleX[index];
-                triangles[i].point2[1] = (y+1)*scaleY[index];
-                triangles[i].point2[2] = dataMuliplied[index][(y+1)*Nx[index]+(x-1)];
-                triangles[i].point1[0] = x*scaleX[index];
-                triangles[i].point1[1] = (y+1)*scaleY[index];
-                triangles[i].point1[2] = dataMuliplied[index][(y+1)*Nx[index]+x];
+                triangles[i].point3[0] = x*scaleXfixed;
+                triangles[i].point3[1] = y*scaleYfixed;
+                triangles[i].point3[2] = dataMuliplied[index][y*Nx[index]+x]/scaleMult;
+                triangles[i].point2[0] = (x-1)*scaleXfixed;
+                triangles[i].point2[1] = (y+1)*scaleYfixed;
+                triangles[i].point2[2] = dataMuliplied[index][(y+1)*Nx[index]+(x-1)]/scaleMult;
+                triangles[i].point1[0] = x*scaleXfixed;
+                triangles[i].point1[1] = (y+1)*scaleYfixed;
+                triangles[i].point1[2] = dataMuliplied[index][(y+1)*Nx[index]+x]/scaleMult;
                 i++;
             }
             if(x!=sizeX-1)//here we writing flat side up triangle
             {
-                triangles[i].point3[0] = x*scaleX[index];
-                triangles[i].point3[1] = y*scaleY[index];
-                triangles[i].point3[2] = dataMuliplied[index][y*Nx[index]+x];
-                triangles[i].point2[0] = x*scaleX[index];
-                triangles[i].point2[1] = (y+1)*scaleY[index];
-                triangles[i].point2[2] = dataMuliplied[index][(y+1)*Nx[index]+x];
-                triangles[i].point1[0] = (x+1)*scaleX[index];
-                triangles[i].point1[1] = y*scaleY[index];
-                triangles[i].point1[2] = dataMuliplied[index][y*Nx[index]+(x+1)];
+                triangles[i].point3[0] = x*scaleXfixed;
+                triangles[i].point3[1] = y*scaleYfixed;
+                triangles[i].point3[2] = dataMuliplied[index][y*Nx[index]+x]/scaleMult;
+                triangles[i].point2[0] = x*scaleXfixed;
+                triangles[i].point2[1] = (y+1)*scaleYfixed;
+                triangles[i].point2[2] = dataMuliplied[index][(y+1)*Nx[index]+x]/scaleMult;
+                triangles[i].point1[0] = (x+1)*scaleXfixed;
+                triangles[i].point1[1] = y*scaleYfixed;
+                triangles[i].point1[2] = dataMuliplied[index][y*Nx[index]+(x+1)]/scaleMult;
                 i++;
             }
         }
@@ -205,9 +207,6 @@ void converter::on_convBut_clicked()
     }
     //then we close the output file and send notification of successfull conversion
     file.close();
-    QMessageBox yep;
-    yep.setText("Selected field was saved to " + outputfilename);
-    yep.exec();
 }
 
 void converter::delZeros()
