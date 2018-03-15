@@ -29,17 +29,26 @@ void converter::on_BrowseButton_clicked()
         return;
     }
     ui->lineEditIn->setText(inputfilename);
-    openspm();
+    bool isOK = openspm();
+    if(!isOK)
+    {
+        return;
+    }
     delZeros();
 }
 
-void converter::openspm()
+bool converter::openspm()
 {
     QFile spm(inputfilename);//Opening input file
         if(!spm.open(QIODevice::ReadOnly))
-            return;
+            return false;
         QDataStream data(&spm);
         qint8 spmType; data>>spmType;//Getting filetype.
+        if(spmType != 1)
+        {
+            QMessageBox::critical(this, "Wrong file format", "Opened file has unknown filetype. Program can work with spm2001 file format only. Please, use SurfaceXplorer to convert your file to required format.");
+            return false;
+        }
         char HEAD_SPM1[223]; //Getting HEAD_SPM1 from file.
         data.readRawData(HEAD_SPM1,223);
         quint16 MaxNx, MaxNy, field_amount=0;
@@ -103,6 +112,7 @@ void converter::openspm()
         ui->fieldselect->setEnabled(true);
         ui->convBut->setEnabled(true);
         ui->fixSurfBut->setEnabled(true);
+        return true;
 }
 
 void converter::on_convBut_clicked()
@@ -212,24 +222,31 @@ void converter::on_convBut_clicked()
 void converter::delZeros()
 {
     int deleted = 0;
-    quint8 index = ui->fieldselect->currentIndex();
-    QVector<bool> isMT(Ny[index],true);
-    for(int j=0;j<Ny[index];j++)
+    QVector<QVector<bool> >isMT(dataMuliplied.size());
+    for(int i=0;i<dataMuliplied.size();i++)
     {
-        for(int k=0;k<Nx[index];k++)
+        isMT[i].resize(Ny[i]);
+        isMT[i].fill(true);
+    }
+    for(int i=0;i<isMT.length();i++)
+    {
+        for(int j=0;j<Ny[i];j++)
         {
-            if(dataMuliplied[index][(j*Nx[index])+k]!=0)
+            for(int k=0;k<Nx[i];k++)
             {
-                isMT[j] = false;
-                break;
+                if(dataMuliplied[i][(j*Nx[i])+k]!=0)
+                {
+                    isMT[i][j] = false;
+                    break;
+                }
             }
-        }
-        if(isMT[j])
-        {
-            dataMuliplied[index].remove(j*Nx[index],Nx[index]);
-            j--;
-            Ny[index]--;
-            deleted++;
+            if(isMT[i][j])
+            {
+                dataMuliplied[i].remove(j*Nx[i],Nx[i]);
+                j--;
+                Ny[i]--;
+                deleted++;
+            }
         }
     }
     if(deleted>0)
@@ -311,5 +328,6 @@ void converter::calcCurve(int start)
 
 void converter::on_fieldselect_currentIndexChanged(int index)
 {
+    if(ui->fieldselect->count()>0)
         ui->fixSurfBut->setEnabled(!wasFixed[index]);
 }
